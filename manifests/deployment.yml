@@ -1,0 +1,16 @@
+apiVersion : apps/v1beta1
+kind: Deployment
+metadata:
+  name: "genvioaks"
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: "genvioaks"
+    spec:
+      containers:
+        - name: "genvioaks"
+          image: "genvio.azurecr.io/genvioaks"
+          ports:
+          - containerPort: 80
