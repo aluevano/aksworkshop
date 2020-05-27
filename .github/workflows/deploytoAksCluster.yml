@@ -1,0 +1,51 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: genvio.azurecr.io
+        username: ${{ secrets.acr_genvio_username }}
+        password: ${{ secrets.acr_genvio_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/" -f  "Dockerfile" -t genvio.azurecr.io/genvioaks:${{ github.sha }}
+        docker push genvio.azurecr.io/genvioaks:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_genvioaks_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep genvioaks6730 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace genvioaks6730`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: genvioaks6730
+        container-registry-url: genvio.azurecr.io
+        container-registry-username: ${{ secrets.acr_genvio_username }}
+        container-registry-password: ${{ secrets.acr_genvio_password }}
+        secret-name: genvioaksdockerauth
+       
+    - uses: azure/k8s-deploy@v1
+      with:
+        namespace: genvioaks6730
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+          manifests/ingress.yml
+        images: |
+          genvio.azurecr.io/genvioaks:${{ github.sha }}
+        imagepullsecrets: |
+          genvioaksdockerauth
