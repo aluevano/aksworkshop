@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+    name: "genvioaks"
+    labels:
+        app: "genvioaks"
+    annotations:
+        kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+    rules:
+        - host: genvioaks6730-genvioaks.be0dfe202b394b8ebf23.centralus.aksapp.io
+          http:
+            paths:
+            - path: /
+              backend:
+                serviceName: "genvioaks"
+                servicePort: 80
